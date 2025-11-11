@@ -1,208 +1,169 @@
-# nnU-Net dataset format
-The only way to bring your data into nnU-Net is by storing it in a specific format. Due to nnU-Net's roots in the
-[Medical Segmentation Decathlon](http://medicaldecathlon.com/) (MSD), its dataset is heavily inspired but has since 
-diverged (see also [here](#how-to-use-decathlon-datasets)) from the format used in the MSD.
+# nnU-Net 数据集格式
+将数据导入 nnU-Net 的唯一方式，就是按照特定格式存储。由于 nnU-Net 源自 [Medical Segmentation Decathlon](http://medicaldecathlon.com/)（MSD），因此其数据集格式深受 MSD 启发，但后来有所演变（另见[这里](#如何使用-decathlon-数据集)）。
 
-Datasets consist of three components: raw images, corresponding segmentation maps and a dataset.json file specifying 
-some metadata. 
+一个数据集由三部分组成：原始图像、对应的分割图，以及一个描述元数据的 dataset.json 文件。
 
-If you are migrating from nnU-Net v1, read [this](#how-to-use-nnu-net-v1-tasks) to convert your existing Tasks.
+如果你正从 nnU-Net v1 迁移，请阅读[这里](#如何使用-nnu-net-v1-任务)转换已有的任务。
 
 
-## What do training cases look like?
-Each training case is associated with an identifier = a unique name for that case. This identifier is used by nnU-Net to 
-connect images with the correct segmentation.
+## 训练样本长什么样？
+每个训练样本都对应一个唯一的标识符（identifier），即该样本的唯一名称。nnU-Net 通过这个标识符将图像与正确的分割结果关联起来。
 
-A training case consists of images and their corresponding segmentation. 
+一个训练样本包含图像及其对应的分割。
 
-**Images** is plural because nnU-Net supports arbitrarily many input channels. In order to be as flexible as possible, 
-nnU-net requires each input channel to be stored in a separate image (with the sole exception being RGB natural 
-images). So these images could for example be a T1 and a T2 MRI (or whatever else you want). The different input 
-channels MUST have the same geometry (same shape, spacing (if applicable) etc.) and
-must be co-registered (if applicable). Input channels are identified by nnU-Net by their FILE_ENDING: a four-digit integer at the end 
-of the filename. Image files must therefore follow the following naming convention: {CASE_IDENTIFIER}_{XXXX}.{FILE_ENDING}. 
-Hereby, XXXX is the 4-digit modality/channel identifier (should be unique for each modality/channel, e.g., “0000” for T1, “0001” for 
-T2 MRI, …) and FILE_ENDING is the file extension used by your image format (.png, .nii.gz, ...). See below for concrete examples.
-The dataset.json file connects channel names with the channel identifiers in the 'channel_names' key (see below for details).
+之所以用 **Images** 的复数，是因为 nnU-Net 支持任意数量的输入通道。为了尽可能灵活，nnU-Net 要求除了 RGB 自然图像外，每个输入通道都单独存储在一个图像文件中。这些图像可以是 T1、T2 MRI 等任何你需要的模态。不同通道必须拥有相同的几何信息（例如尺寸、像素间距等，如适用），并且需要（在适用时）完成配准。nnU-Net 通过文件名的 FILE_ENDING（四位整数）识别输入通道。图像文件必须遵循以下命名规则：{CASE_IDENTIFIER}_{XXXX}.{FILE_ENDING}。其中 XXXX 是 4 位通道/模态编号（每个模态/通道都应该唯一，例如 T1 用 “0000”、T2 MRI 用 “0001” 等），FILE_ENDING 则是图像格式的扩展名（如 .png、.nii.gz 等）。具体示例见下文。dataset.json 通过 `channel_names` 字段将通道名称与这些编号关联起来（见下文细节）。
 
-Side note: Typically, each channel/modality needs to be stored in a separate file and is accessed with the XXXX channel identifier. 
-Exception are natural images (RGB; .png) where the three color channels can all be stored in one file (see the 
-[road segmentation](../nnunetv2/dataset_conversion/Dataset120_RoadSegmentation.py) dataset as an example). 
+补充说明：通常每个通道/模态都需要单独的文件，并通过通道编号 XXXX 访问。唯一例外是自然图像（RGB；.png），三个颜色通道可以共存在一个文件中（例子见 [road segmentation](../nnunetv2/dataset_conversion/Dataset120_RoadSegmentation.py) 数据集）。
 
-**Segmentations** must share the same geometry with their corresponding images (same shape etc.). Segmentations are 
-integer maps with each value representing a semantic class. The background must be 0. If there is no background, then 
-do not use the label 0 for something else! Integer values of your semantic classes must be consecutive (0, 1, 2, 3, 
-...). Of course, not all labels have to be present in each training case. Segmentations are saved as {CASE_IDENTIFER}.{FILE_ENDING} .
+**Segmentations（分割图）** 必须与对应图像拥有相同的几何信息（例如相同的尺寸）。分割图是整数映射，每个像素值代表一个语义类别。背景必须为 0。如果没有背景，也不要把 0 用于其他类别！语义类别的整数值必须连续（0、1、2、3 ...）。当然，每个训练样本不必包含所有类别。分割图的命名格式为 {CASE_IDENTIFIER}.{FILE_ENDING}。
 
-Within a training case, all image geometries (input channels, corresponding segmentation) must match. Between training 
-cases, they can of course differ. nnU-Net takes care of that.
+在同一个训练样本内，所有图像的几何信息（输入通道、对应分割）必须一致；在不同训练样本之间，它们可以不同，nnU-Net 会处理这些差异。
 
-Important: The input channels must be consistent! Concretely, **all images need the same input channels in the same 
-order and all input channels have to be present every time**. This is also true for inference!
+重要提示：输入通道必须保持一致！具体来说，**所有图像都需要包含相同的输入通道，顺序一致，并且每次都必须齐全**。推理阶段同样适用！
 
 
-## Supported file formats
-nnU-Net expects the same file format for images and segmentations! These will also be used for inference. For now, it 
-is thus not possible to train .png and then run inference on .jpg.
+## 支持的文件格式
+nnU-Net 要求图像与分割图使用相同的文件格式！推理阶段也会使用同样的格式。因此，目前无法使用 .png 训练后再用 .jpg 推理。
 
-One big change in nnU-Net V2 is the support of multiple input file types. Gone are the days of converting everything to .nii.gz!
-This is implemented by abstracting the input and output of images + segmentations through `BaseReaderWriter`. nnU-Net 
-comes with a broad collection of Readers+Writers and you can even add your own to support your data format! 
-See [here](../nnunetv2/imageio/readme.md).
+nnU-Net V2 的一大变化是支持多种输入文件类型。从此再也不用把所有内容都转换成 .nii.gz！这是通过 `BaseReaderWriter` 抽象图像与分割的输入输出实现的。nnU-Net 内置了丰富的读写器组合，你也可以编写自己的 Reader+Writer 来支持自定义格式！详见[这里](../nnunetv2/imageio/readme.md)。
 
-As a nice bonus, nnU-Net now also natively supports 2D input images and you no longer have to mess around with 
-conversions to pseudo 3D niftis. Yuck. That was disgusting.
+更棒的是，nnU-Net 现在原生支持 2D 输入图像，不再需要把 2D 数据硬凑成伪 3D nifti —— 真是太棒了。
 
-Note that internally (for storing and accessing preprocessed images) nnU-Net will use its own file format, irrespective 
-of what the raw data was provided in! This is for performance reasons.
+需要注意的是，无论原始数据是什么格式，nnU-Net 在内部（用于存储和访问预处理数据）都会使用自己的文件格式，这是为了性能考虑。
 
 
-By default, the following file formats are supported:
+默认支持的文件格式如下：
 
-- NaturalImage2DIO: .png, .bmp, .tif
-- NibabelIO: .nii.gz, .nrrd, .mha
-- NibabelIOWithReorient: .nii.gz, .nrrd, .mha. This reader will reorient images to RAS!
-- SimpleITKIO: .nii.gz, .nrrd, .mha
-- Tiff3DIO: .tif, .tiff. 3D tif images! Since TIF does not have a standardized way of storing spacing information, 
-nnU-Net expects each TIF file to be accompanied by an identically named .json file that contains this information (see
-[here](#datasetjson)).
+- NaturalImage2DIO：.png、.bmp、.tif
+- NibabelIO：.nii.gz、.nrrd、.mha
+- NibabelIOWithReorient：.nii.gz、.nrrd、.mha（该读取器会把图像重采样到 RAS 朝向）
+- SimpleITKIO：.nii.gz、.nrrd、.mha
+- Tiff3DIO：.tif、.tiff（3D TIF 图像！由于 TIF 没有标准化的像素间距存储方式，nnU-Net 期望每个 TIF 文件配套一个同名 .json 文件用来存储这些信息，详见[这里](#datasetjson)）
 
-The file extension lists are not exhaustive and depend on what the backend supports. For example, nibabel and SimpleITK 
-support more than the three given here. The file endings given here are just the ones we tested!
+上面的扩展名列表并不穷尽，具体取决于底层库的支持情况。例如 nibabel 和 SimpleITK 支持的格式远不止列出的三个。这里给出的只是我们验证过的扩展名！
 
-IMPORTANT: nnU-Net can only be used with file formats that use lossless (or no) compression! Because the file 
-format is defined for an entire dataset (and not separately for images and segmentations, this could be a todo for 
-the future), we must ensure that there are no compression artifacts that destroy the segmentation maps. So no .jpg and 
-the likes! 
+重要提示：nnU-Net 只能使用无损（或不压缩）格式！由于文件格式是在整个数据集一级定义的（而不是图像和分割分别定义，也许未来会支持），我们必须保证没有压缩伪影破坏分割结果。所以禁止使用 .jpg 等有损格式！
 
-## Dataset folder structure
-Datasets must be located in the `nnUNet_raw` folder (which you either define when installing nnU-Net or export/set every 
-time you intend to run nnU-Net commands!).
-Each segmentation dataset is stored as a separate 'Dataset'. Datasets are associated with a dataset ID, a three digit 
-integer, and a dataset name (which you can freely choose): For example, Dataset005_Prostate has 'Prostate' as dataset name and 
-the dataset id is 5. Datasets are stored in the `nnUNet_raw` folder like this:
+## 数据集文件夹结构
+数据集必须位于 `nnUNet_raw` 文件夹中（你可以在安装 nnU-Net 时指定，或在运行 nnU-Net 命令前导出/设置该路径）。
+每个分割数据集作为一个独立的 “Dataset” 存放。每个数据集都与一个三位整数 ID 和一个可自定义的名称关联。例如 Dataset005_Prostate 的数据集名称是 “Prostate”，ID 为 5。`nnUNet_raw` 文件夹中的结构如下：
 
-    nnUNet_raw/
-    ├── Dataset001_BrainTumour
-    ├── Dataset002_Heart
-    ├── Dataset003_Liver
-    ├── Dataset004_Hippocampus
-    ├── Dataset005_Prostate
+```
+nnUNet_raw/
+├── Dataset001_BrainTumour
+├── Dataset002_Heart
+├── Dataset003_Liver
+├── Dataset004_Hippocampus
+├── Dataset005_Prostate
+├── ...
+```
+
+在每个数据集文件夹内部，期望的结构如下：
+
+```
+Dataset001_BrainTumour/
+├── dataset.json
+├── imagesTr
+├── imagesTs  # 可选
+└── labelsTr
+```
+
+当你添加自定义数据集时，请查看 [dataset_conversion](../nnunetv2/dataset_conversion) 文件夹，并选择一个尚未使用的 ID。ID 001-010 保留给 Medical Segmentation Decathlon。
+
+- **imagesTr**：训练样本的图像。nnU-Net 会使用这些数据进行流程配置、交叉验证训练、寻找后处理方法以及最优集成。
+- **imagesTs**（可选）：测试样本的图像。nnU-Net 不会使用它们！但这可以是你存放测试图像的一个便捷位置，延续自 MSD 的目录结构。
+- **labelsTr**：训练样本的真值分割图像。
+- **dataset.json**：数据集的元数据。
+
+上文介绍的命名方案（见[训练样本长什么样？](#训练样本长什么样)）会形成如下目录结构。以下以 MSD 的第一个数据集 BrainTumour 为例。该数据集有四个输入通道：FLAIR（0000）、T1w（0001）、T1gd（0002）、T2w（0003）。请注意 imagesTs 文件夹是可选的，可以不存在。
+
+```
+nnUNet_raw/Dataset001_BrainTumour/
+├── dataset.json
+├── imagesTr
+│   ├── BRATS_001_0000.nii.gz
+│   ├── BRATS_001_0001.nii.gz
+│   ├── BRATS_001_0002.nii.gz
+│   ├── BRATS_001_0003.nii.gz
+│   ├── BRATS_002_0000.nii.gz
+│   ├── BRATS_002_0001.nii.gz
+│   ├── BRATS_002_0002.nii.gz
+│   ├── BRATS_002_0003.nii.gz
+│   ├── ...
+├── imagesTs
+│   ├── BRATS_485_0000.nii.gz
+│   ├── BRATS_485_0001.nii.gz
+│   ├── BRATS_485_0002.nii.gz
+│   ├── BRATS_485_0003.nii.gz
+│   ├── BRATS_486_0000.nii.gz
+│   ├── BRATS_486_0001.nii.gz
+│   ├── BRATS_486_0002.nii.gz
+│   ├── BRATS_486_0003.nii.gz
+│   ├── ...
+└── labelsTr
+    ├── BRATS_001.nii.gz
+    ├── BRATS_002.nii.gz
     ├── ...
+```
 
-Within each dataset folder, the following structure is expected:
+再举一个 MSD 第二个数据集（Heart）的例子，它只有一个输入通道：
 
-    Dataset001_BrainTumour/
-    ├── dataset.json
-    ├── imagesTr
-    ├── imagesTs  # optional
-    └── labelsTr
+```
+nnUNet_raw/Dataset002_Heart/
+├── dataset.json
+├── imagesTr
+│   ├── la_003_0000.nii.gz
+│   ├── la_004_0000.nii.gz
+│   ├── ...
+├── imagesTs
+│   ├── la_001_0000.nii.gz
+│   ├── la_002_0000.nii.gz
+│   ├── ...
+└── labelsTr
+    ├── la_003.nii.gz
+    ├── la_004.nii.gz
+    ├── ...
+```
 
+请牢记：每个训练样本内，所有图像必须具有相同的几何信息，以确保像素阵列对齐。同时确保所有数据都完成配准！
 
-When adding your custom dataset, take a look at the [dataset_conversion](../nnunetv2/dataset_conversion) folder and 
-pick an id that is not already taken. IDs 001-010 are for the Medical Segmentation Decathlon.
-
-- **imagesTr** contains the images belonging to the training cases. nnU-Net will perform pipeline configuration, training with 
-cross-validation, as well as finding postprocessing and the best ensemble using this data. 
-- **imagesTs** (optional) contains the images that belong to the test cases. nnU-Net does not use them! This could just 
-be a convenient location for you to store these images. Remnant of the Medical Segmentation Decathlon folder structure.
-- **labelsTr** contains the images with the ground truth segmentation maps for the training cases. 
-- **dataset.json** contains metadata of the dataset.
-
-The scheme introduced [above](#what-do-training-cases-look-like) results in the following folder structure. Given 
-is an example for the first Dataset of the MSD: BrainTumour. This dataset hat four input channels: FLAIR (0000), 
-T1w (0001), T1gd (0002) and T2w (0003). Note that the imagesTs folder is optional and does not have to be present.
-
-    nnUNet_raw/Dataset001_BrainTumour/
-    ├── dataset.json
-    ├── imagesTr
-    │   ├── BRATS_001_0000.nii.gz
-    │   ├── BRATS_001_0001.nii.gz
-    │   ├── BRATS_001_0002.nii.gz
-    │   ├── BRATS_001_0003.nii.gz
-    │   ├── BRATS_002_0000.nii.gz
-    │   ├── BRATS_002_0001.nii.gz
-    │   ├── BRATS_002_0002.nii.gz
-    │   ├── BRATS_002_0003.nii.gz
-    │   ├── ...
-    ├── imagesTs
-    │   ├── BRATS_485_0000.nii.gz
-    │   ├── BRATS_485_0001.nii.gz
-    │   ├── BRATS_485_0002.nii.gz
-    │   ├── BRATS_485_0003.nii.gz
-    │   ├── BRATS_486_0000.nii.gz
-    │   ├── BRATS_486_0001.nii.gz
-    │   ├── BRATS_486_0002.nii.gz
-    │   ├── BRATS_486_0003.nii.gz
-    │   ├── ...
-    └── labelsTr
-        ├── BRATS_001.nii.gz
-        ├── BRATS_002.nii.gz
-        ├── ...
-
-Here is another example of the second dataset of the MSD, which has only one input channel:
-
-    nnUNet_raw/Dataset002_Heart/
-    ├── dataset.json
-    ├── imagesTr
-    │   ├── la_003_0000.nii.gz
-    │   ├── la_004_0000.nii.gz
-    │   ├── ...
-    ├── imagesTs
-    │   ├── la_001_0000.nii.gz
-    │   ├── la_002_0000.nii.gz
-    │   ├── ...
-    └── labelsTr
-        ├── la_003.nii.gz
-        ├── la_004.nii.gz
-        ├── ...
-
-Remember: For each training case, all images must have the same geometry to ensure that their pixel arrays are aligned. Also 
-make sure that all your data is co-registered!
-
-See also [dataset format inference](dataset_format_inference.md)!!
+另见 [dataset format inference](dataset_format_inference.md)！
 
 ## dataset.json
-The dataset.json contains metadata that nnU-Net needs for training. We have greatly reduced the number of required 
-fields since version 1!
+dataset.json 保存了 nnU-Net 训练所需的元数据。相比 v1，我们大幅减少了必填字段！
 
-Here is what the dataset.json should look like at the example of the Dataset005_Prostate from the MSD:
+下面是 MSD 中 Dataset005_Prostate 数据集的示例：
 
-    { 
-     "channel_names": {  # formerly modalities
-       "0": "T2", 
-       "1": "ADC"
-     }, 
-     "labels": {  # THIS IS DIFFERENT NOW!
-       "background": 0,
-       "PZ": 1,
-       "TZ": 2
-     }, 
-     "numTraining": 32, 
-     "file_ending": ".nii.gz"
-     "overwrite_image_reader_writer": "SimpleITKIO"  # optional! If not provided nnU-Net will automatically determine the ReaderWriter
-     }
+```
+{ 
+ "channel_names": {  # 之前叫 modalities
+   "0": "T2", 
+   "1": "ADC"
+ }, 
+ "labels": {  # 这个现在不一样了！
+   "background": 0,
+   "PZ": 1,
+   "TZ": 2
+ }, 
+ "numTraining": 32, 
+ "file_ending": ".nii.gz"
+ "overwrite_image_reader_writer": "SimpleITKIO"  # 可选！若不提供，nnU-Net 会自动决定 ReaderWriter
+ }
+```
 
-The channel_names determine the normalization used by nnU-Net. If a channel is marked as 'CT', then a global 
-normalization based on the intensities in the foreground pixels will be used. If it is something else, per-channel 
-z-scoring will be used. Refer to the methods section in [our paper](https://www.nature.com/articles/s41592-020-01008-z) 
-for more details. nnU-Net v2 introduces a few more normalization schemes to 
-choose from and allows you to define your own, see [here](explanation_normalization.md) for more information. 
+`channel_names` 决定 nnU-Net 的归一化方式。如果某个通道标记为 “CT”，则使用基于前景像素强度的全局归一化。否则会对每个通道进行 z-score 归一化。更多细节请参考我们论文的[方法部分](https://www.nature.com/articles/s41592-020-01008-z)。nnU-Net v2 新增了更多可选的归一化方案，并允许你自定义，详见[这里](explanation_normalization.md)。
 
-Important changes relative to nnU-Net v1:
-- "modality" is now called "channel_names" to remove strong bias to medical images
-- labels are structured differently (name -> int instead of int -> name). This was needed to support [region-based training](region_based_training.md)
-- "file_ending" is added to support different input file types
-- "overwrite_image_reader_writer" optional! Can be used to specify a certain (custom) ReaderWriter class that should 
-be used with this dataset. If not provided, nnU-Net will automatically determine the ReaderWriter
-- "regions_class_order" only used in [region-based training](region_based_training.md)
+相较于 nnU-Net v1 的重要变化：
+- “modality” 现改为 “channel_names”，以减少对医学图像的偏向
+- labels 的结构发生变化（名称 -> 整数，而非整数 -> 名称），这是为了支持[基于区域的训练](region_based_training.md)
+- 新增 “file_ending”，以支持不同的输入文件类型
+- “overwrite_image_reader_writer” 为可选项！可用于指定特定（自定义）的 ReaderWriter 类；若不提供，nnU-Net 会自动选择
+- “regions_class_order” 仅在[基于区域的训练](region_based_training.md)中使用
 
-There is a utility with which you can generate the dataset.json automatically. You can find it 
-[here](../nnunetv2/dataset_conversion/generate_dataset_json.py). 
-See our examples in [dataset_conversion](../nnunetv2/dataset_conversion) for how to use it. And read its documentation!
+我们提供了一个工具，可以自动生成 dataset.json，位置在[这里](../nnunetv2/dataset_conversion/generate_dataset_json.py)。请参考 [dataset_conversion](../nnunetv2/dataset_conversion) 里的示例了解用法，并务必阅读文档！
 
-As described above, a json file that contains spacing information is required for TIFF files.
-An example for a 3D TIFF stack with units corresponding to 7.6 in x and y, 80 in z is:
+如上所述，对于 TIFF 文件，需要一个包含像素间距信息的 json 文件。
+例如，一个在 x、y 方向像素间距为 7.6、z 方向为 80 的 3D TIFF 栈，其 json 文件如下：
 
 ```
 {
@@ -210,45 +171,40 @@ An example for a 3D TIFF stack with units corresponding to 7.6 in x and y, 80 in
 }
 ```
 
-Within the dataset folder, this file (named `cell6.json` in this example) would be placed in the following folders:
+在数据集文件夹中，该文件（以 `cell6.json` 为例）需要放在如下位置：
 
-    nnUNet_raw/Dataset123_Foo/
-    ├── dataset.json
-    ├── imagesTr
-    │   ├── cell6.json
-    │   └── cell6_0000.tif
-    └── labelsTr
-        ├── cell6.json
-        └── cell6.tif
+```
+nnUNet_raw/Dataset123_Foo/
+├── dataset.json
+├── imagesTr
+│   ├── cell6.json
+│   └── cell6_0000.tif
+└── labelsTr
+    ├── cell6.json
+    └── cell6.tif
+```
 
 
-## How to use nnU-Net v1 Tasks
-If you are migrating from the old nnU-Net, convert your existing datasets with `nnUNetv2_convert_old_nnUNet_dataset`!
+## 如何使用 nnU-Net v1 任务
+如果你要从旧版 nnU-Net 迁移，请使用 `nnUNetv2_convert_old_nnUNet_dataset` 转换已有数据集！
 
-Example for migrating a nnU-Net v1 Task:
+迁移 nnU-Net v1 任务的示例：
 ```bash
 nnUNetv2_convert_old_nnUNet_dataset /media/isensee/raw_data/nnUNet_raw_data_base/nnUNet_raw_data/Task027_ACDC Dataset027_ACDC 
 ```
-Use `nnUNetv2_convert_old_nnUNet_dataset -h` for detailed usage instructions.
+使用 `nnUNetv2_convert_old_nnUNet_dataset -h` 查看详细说明。
 
 
-## How to use decathlon datasets
-See [convert_msd_dataset.md](convert_msd_dataset.md)
+## 如何使用 Decathlon 数据集
+参见 [convert_msd_dataset.md](convert_msd_dataset.md)。
 
-## How to use 2D data with nnU-Net
-2D is now natively supported (yay!). See [here](#supported-file-formats) as well as the example dataset in this 
-[script](../nnunetv2/dataset_conversion/Dataset120_RoadSegmentation.py).
+## 如何在 nnU-Net 中使用 2D 数据
+nnU-Net 现已原生支持 2D 数据（欢呼！）。请查看[支持的文件格式](#支持的文件格式)以及示例数据集的[脚本](../nnunetv2/dataset_conversion/Dataset120_RoadSegmentation.py)。
 
 
-## How to update an existing dataset
-When updating a dataset it is best practice to remove the preprocessed data in `nnUNet_preprocessed/DatasetXXX_NAME` 
-to ensure a fresh start. Then replace the data in `nnUNet_raw` and rerun `nnUNetv2_plan_and_preprocess`. Optionally, 
-also remove the results from old trainings.
+## 如何更新现有数据集
+更新数据集时，最佳做法是先删除 `nnUNet_preprocessed/DatasetXXX_NAME` 中的预处理数据，以便重新开始。然后替换 `nnUNet_raw` 中的数据，并重新运行 `nnUNetv2_plan_and_preprocess`。如有需要，也可以删除旧训练的结果。
 
-# Example dataset conversion scripts
-In the `dataset_conversion` folder (see [here](../nnunetv2/dataset_conversion)) are multiple example scripts for 
-converting datasets into nnU-Net format. These scripts cannot be run as they are (you need to open them and change 
-some paths) but they are excellent examples for you to learn how to convert your own datasets into nnU-Net format. 
-Just pick the dataset that is closest to yours as a starting point.
-The list of dataset conversion scripts is continually updated. If you find that some publicly available dataset is 
-missing, feel free to open a PR to add it!
+# 数据集转换脚本示例
+`dataset_conversion` 文件夹（见[这里](../nnunetv2/dataset_conversion)）中提供了多个将数据集转换为 nnU-Net 格式的示例脚本。这些脚本不能直接运行（需要你打开并修改路径），但它们是学习如何转换自有数据集的绝佳示例。挑一个与你的数据集最相似的脚本作为起点即可。
+示例脚本列表会持续更新。如果你发现某个公开数据集缺失，欢迎提交 PR 添加！
