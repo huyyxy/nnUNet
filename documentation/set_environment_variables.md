@@ -1,14 +1,13 @@
-# How to set environment variables
+# 如何设置环境变量
 
-nnU-Net requires some environment variables so that it always knows where the raw data, preprocessed data and trained 
-models are. Depending on the operating system, these environment variables need to be set in different ways.
+nnU-Net 需要配置一些环境变量，这样它随时都知道原始数据、预处理数据和训练模型存放的位置。不同操作系统的配置方式会有所区别。
 
-Variables can either be set permanently (recommended!) or you can decide to set them every time you call nnU-Net. 
+这些变量可以永久设置（推荐！），也可以选择在每次调用 nnU-Net 时临时设置。
 
-# Linux & MacOS
+# Linux 与 MacOS
 
-## Permanent
-Locate the `.bashrc` file in your home folder and add the following lines to the bottom:
+## 永久设置
+找到主目录中的 `.bashrc` 文件，并在文件末尾加入以下内容：
 
 ```bash
 export nnUNet_raw="/media/fabian/nnUNet_raw"
@@ -16,40 +15,37 @@ export nnUNet_preprocessed="/media/fabian/nnUNet_preprocessed"
 export nnUNet_results="/media/fabian/nnUNet_results"
 ```
 
-(Of course you need to adapt the paths to the actual folders you intend to use).
-If you are using a different shell, such as zsh, you will need to find the correct script for it. For zsh this is `.zshrc`.
+（记得根据实际情况修改为你自己的路径。）
+如果你使用的是其他 shell，例如 zsh，需要找到对应的启动脚本。对 zsh 来说，这个文件是 `.zshrc`。
 
-## Temporary
-Just execute the following lines whenever you run nnU-Net:
+## 临时设置
+每次运行 nnU-Net 前执行以下命令即可：
 ```bash
 export nnUNet_raw="/media/fabian/nnUNet_raw"
 export nnUNet_preprocessed="/media/fabian/nnUNet_preprocessed"
 export nnUNet_results="/media/fabian/nnUNet_results"
 ```
-(Of course you need to adapt the paths to the actual folders you intend to use).
+（记得根据实际情况修改为你自己的路径。）
 
-Important: These variables will be deleted if you close your terminal! They will also only apply to the current 
-terminal window and DO NOT transfer to other terminals!
+重要提示：关闭终端后这些变量会被清除！它们只对当前终端窗口生效，无法在不同终端之间共享！
 
-Alternatively you can also just prefix them to your nnU-Net commands:
+你也可以在运行 nnU-Net 的命令前直接添加这些变量：
 
 `nnUNet_results="/media/fabian/nnUNet_results" nnUNet_preprocessed="/media/fabian/nnUNet_preprocessed" nnUNetv2_train[...]`
 
-## Verify that environment parameters are set
-You can always execute `echo ${nnUNet_raw}` etc to print the environment variables. This will return an empty string if 
-they were not set.
+## 验证环境变量是否已设置
+可以执行 `echo ${nnUNet_raw}` 等命令来查看环境变量。如果变量未设置，将返回空字符串。
 
 # Windows
-Useful links:
+参考链接：
 - [https://www3.ntu.edu.sg](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Environment_Variables.html#:~:text=To%20set%20(or%20change)%20a,it%20to%20an%20empty%20string.)
 - [https://phoenixnap.com](https://phoenixnap.com/kb/windows-set-environment-variable)
 
-## Permanent
-See `Set Environment Variable in Windows via GUI` [here](https://phoenixnap.com/kb/windows-set-environment-variable). 
-Or read about setx (command prompt).
+## 永久设置
+参考 [这里](https://phoenixnap.com/kb/windows-set-environment-variable) 的 `Set Environment Variable in Windows via GUI`。也可以了解如何通过命令提示符使用 setx。
 
-## Temporary
-Just execute the following before you run nnU-Net:
+## 临时设置
+在运行 nnU-Net 之前执行以下命令：
 
 (PowerShell)
 ```PowerShell
@@ -65,14 +61,13 @@ set nnUNet_preprocessed=C:/Users/fabian/nnUNet_preprocessed
 set nnUNet_results=C:/Users/fabian/fabian/nnUNet_results
 ```
 
-(Of course you need to adapt the paths to the actual folders you intend to use).
+（记得根据实际情况修改为你自己的路径。）
 
-Important: These variables will be deleted if you close your session! They will also only apply to the current 
-window and DO NOT transfer to other sessions!
+重要提示：关闭会话后这些变量会被清除！它们只对当前窗口生效，无法在其他会话中使用！
 
-## Verify that environment parameters are set
-Printing in Windows works differently depending on the environment you are in:
+## 验证环境变量是否已设置
+在 Windows 中打印变量的方法取决于当前所处的环境：
 
-PowerShell: `echo $Env:[variable_name]`
+PowerShell：`echo $Env:[variable_name]`
 
-Command Prompt: `echo %variable_name%`
+Command Prompt：`echo %variable_name%`

@@ -1,34 +1,20 @@
-# Region-based training
+# 基于区域的训练
 
-## What is this about?
-In some segmentation tasks, most prominently the 
-[Brain Tumor Segmentation Challenge](http://braintumorsegmentation.org/), the target areas (based on which the metric 
-will be computed) are different from the labels provided in the training data. This is the case because for some 
-clinical applications, it is more relevant to detect the whole tumor, tumor core and enhancing tumor instead of the 
-individual labels (edema, necrosis and non-enhancing tumor, enhancing tumor). 
+## 这是什么？
+在一些分割任务中，最典型的是[脑肿瘤分割挑战赛](http://braintumorsegmentation.org/)，用于评估指标的目标区域与训练数据中提供的标签并不一致。出现这种情况，是因为在部分临床应用中，与其分别检测水肿、坏死和非增强肿瘤、增强肿瘤等单独标签，更重要的是识别整个肿瘤、肿瘤核心以及增强肿瘤等区域。
 
 <img src="assets/regions_vs_labels.png" width="768px" />
 
-The figure shows an example BraTS case along with label-based representation of the task (top) and region-based 
-representation (bottom). The challenge evaluation is done on the regions. As we have shown in our 
-[BraTS 2018 contribution](https://arxiv.org/abs/1809.10483), directly optimizing those 
-overlapping areas over the individual labels yields better scoring models!
+上图展示了一个 BraTS 案例，上方是基于标签的任务表示，下方是基于区域的表示。挑战赛的评估基于区域进行。如我们在[BraTS 2018 的工作](https://arxiv.org/abs/1809.10483)中所示，直接对这些重叠区域而不是单独标签进行优化能够得到得分更高的模型！
 
-## What can nnU-Net do?
-nnU-Net's region-based training allows you to learn areas that are constructed by merging individual labels. For 
-some segmentation tasks this provides a benefit, as this shifts the importance allocated to different labels during training. 
-Most prominently, this feature can be used to represent **hierarchical classes**, for example when organs + 
-substructures are to be segmented. Imagine a liver segmentation problem, where vessels and tumors are also to be 
-segmented. The first target region could thus be the entire liver (including the substructures), while the remaining 
-targets are the individual substructues.
+## nnU-Net 能做什么？
+nnU-Net 的基于区域训练允许通过合并单独标签来学习区域。对某些分割任务而言，这会带来好处，因为它在训练过程中重新分配了不同标签的重要性。尤为突出的是，这个特性可用于表示**层次化类别**，例如当需要同时分割器官及其子结构时。想象一个肝脏分割问题，同时还需分割血管和肿瘤。第一个目标区域可以是整个肝脏（包含子结构），其余目标则是各个子结构。
 
-Important: nnU-Net still requires integer label maps as input and will produce integer label maps as output! 
-Region-based training can be used to learn overlapping labels, but there must be a way to model these overlaps 
-for nnU-Net to work (see below how this is done).
+重要提示：nnU-Net 仍然需要整数标签图作为输入，并生成整数标签图作为输出！基于区域的训练可以用来学习重叠标签，但前提是必须存在某种方式来建模这些重叠（下面会介绍 nnU-Net 如何实现这一点）。
 
-## How do you use it?
+## 如何使用？
 
-When declaring the labels in the `dataset.json` file, BraTS would typically look like this:
+在 `dataset.json` 中声明标签时，BraTS 通常是这样的：
 
 ```python
 ...
@@ -40,11 +26,11 @@ When declaring the labels in the `dataset.json` file, BraTS would typically look
 },
 ...
 ```
-(we use different int values than the challenge because nnU-Net needs consecutive integers!)
+（我们使用与挑战赛不同的整数值，因为 nnU-Net 需要连续的整数！）
 
-This representation corresponds to the upper row in the figure above.
+这种表示方式对应于上图的上方那一行。
 
-For region-based training, the labels need to be changed to the following:
+若要进行基于区域的训练，需要将标签改成如下形式：
 
 ```python
 ...
@@ -52,28 +38,15 @@ For region-based training, the labels need to be changed to the following:
     "background": 0,
     "whole_tumor": [1, 2, 3],
     "tumor_core": [2, 3],
-    "enhancing_tumor": 3  # or [3]
+    "enhancing_tumor": 3  # 或 [3]
 },
 "regions_class_order": [1, 2, 3],
 ...
 ```
-This corresponds to the bottom row in the figure above. Note how an additional entry in the dataset.json is 
-required: `regions_class_order`. This tells nnU-Net how to convert the region representations back to an integer map. 
-It essentially just tells nnU-Net what labels to place for which region in what order. The length of the 
-list here needs to be the same as the number of regions (excl background). Each element in the list corresponds 
-to the label that is placed instead of the region into the final segmentation. Later entries will overwrite earlier ones! 
-Concretely, for the example given here, nnU-Net 
-will firstly place the label 1 (edema) where the 'whole_tumor' region was predicted, then place the label 2 
-(non-enhancing tumor and necrosis) where the "tumor_core" was predicted and finally place the label 3 in the 
-predicted 'enhancing_tumor' area. With each step, part of the previously set pixels 
-will be overwritten with the new label! So when setting your `regions_class_order`, place encompassing regions 
-(like whole tumor etc) first, followed by substructures.
+这对应于上图的下方那一行。请注意，`dataset.json` 中需要新增一个条目：`regions_class_order`。它告诉 nnU-Net 如何将区域表示重新转换为整数标签图。本质上，它指定了 nnU-Net 应该以什么顺序、在各个区域上放置哪些标签。该列表的长度必须与区域数量（不含背景）一致。列表中每个元素对应于最终分割中用来替换该区域的标签。后面的条目会覆盖前面的条目！具体而言，在这个例子中，nnU-Net 会先在预测的 `whole_tumor` 区域中放置标签 1（水肿），然后在预测的 `tumor_core` 区域放置标签 2（非增强肿瘤和坏死），最后在预测的 `enhancing_tumor` 区域放置标签 3。在每一步中，先前设置的像素会被新标签覆盖！因此在设置 `regions_class_order` 时，请先放置包含型区域（例如 whole_tumor 等），再放子结构。
 
-**IMPORTANT** Because the conversion back to a segmentation map is sensitive to the order in which the regions are 
-declared ("place label X in the first region") you need to make sure that this order is not perturbed! When 
-automatically generating the dataset.json, make sure the dictionary keys do not get sorted alphabetically! Set 
-`sort_keys=False` in `json.dump()`!!!
+**重要提示**：由于将区域转换回分割图时对区域声明顺序非常敏感（“把标签 X 放在第一个区域”），必须确保这个顺序不会被改变！如果是自动生成 `dataset.json`，要确保字典键不会被按字母顺序排序！在 `json.dump()` 中设置 `sort_keys=False`！
 
-nnU-Net will perform the evaluation + model selection also on the regions, not the individual labels!
+nnU-Net 会在区域级别（而不是单独标签）执行评估和模型选择！
 
-That's all. Easy, huh?
+就这样，简单吧？

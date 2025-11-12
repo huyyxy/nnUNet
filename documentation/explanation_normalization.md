@@ -1,45 +1,32 @@
-# Intensity normalization in nnU-Net 
+# nnU-Net 中的强度归一化
 
-The type of intensity normalization applied in nnU-Net can be controlled via the `channel_names` (former `modalities`)
-entry in the dataset.json. Just like the old nnU-Net, per-channel z-scoring as well as dataset-wide z-scoring based on 
-foreground intensities are supported. However, there have been a few additions as well.
+在 nnU-Net 中，强度归一化的方式可以通过 dataset.json 里的 `channel_names`（旧版称为 `modalities`）字段来控制。与旧版 nnU-Net 相同，我们支持按通道的 z-score 归一化，以及基于前景强度的全数据集 z-score 归一化。此外，我们还新增了一些选项。
 
-Reminder: The `channel_names` entry typically looks like this: 
+提醒：`channel_names` 字段通常如下所示：
 
     "channel_names": {
         "0": "T2",
         "1": "ADC"
     },
 
-It has as many entries as there are input channels for the given dataset.
+该字段的条目数与数据集的输入通道数相同。
 
-To tell you a secret, nnU-Net does not really care what your channels are called. We just use this to determine what normalization
-scheme will be used for the given dataset. nnU-Net requires you to specify a normalization strategy for each of your input channels! 
-If you enter a channel name that is not in the following list, the default (`zscore`) will be used.
+偷偷告诉你：nnU-Net 实际上并不关心通道名称本身，我们只是用它来决定这个数据集采用哪种归一化策略。nnU-Net 要求你为每个输入通道指定一个归一化策略！如果你填写的通道名称不在下述列表中，将自动采用默认策略（`zscore`）。
 
-Here is a list of currently available normalization schemes:
+目前可用的归一化策略如下：
 
-- `CT`: Perform CT normalization. Specifically, collect intensity values from the foreground classes (all but the 
-background and ignore) from all training cases, compute the mean, standard deviation as well as the 0.5 and 
-99.5 percentile of the values. Then clip to the percentiles, followed by subtraction of the mean and division with the 
-standard deviation. The normalization that is applied is the same for each training case (for this input channel).
-The values used by nnU-Net for normalization are stored in the `foreground_intensity_properties_per_channel` entry in the 
-corresponding plans file. This normalization is suitable for modalities presenting physical quantities such as CT 
-images and ADC maps.
-- `noNorm` : do not perform any normalization at all
-- `rescale_to_0_1`: rescale the intensities to [0, 1]
-- `rgb_to_0_1`: assumes uint8 inputs. Divides by 255 to rescale uint8 to [0, 1]
-- `zscore`/anything else: perform z-scoring (subtract mean and standard deviation) separately for each train case
+- `CT`：执行 CT 归一化。具体流程是：从所有训练病例的前景类别（除背景和忽略标签外）收集强度值，计算其均值、标准差以及 0.5 和 99.5 分位数。先将强度裁剪到这两个分位数之间，再减去均值并除以标准差。对该输入通道而言，每个训练病例都会使用相同的归一化参数。nnU-Net 会将这些参数存储在对应计划文件的 `foreground_intensity_properties_per_channel` 字段中。此归一化适用于表示物理量的模态，如 CT 图像和 ADC 图像。
+- `noNorm`：不执行任何归一化。
+- `rescale_to_0_1`：将强度重缩放到 [0, 1]。
+- `rgb_to_0_1`：假设输入为 uint8，通过除以 255 将其缩放至 [0, 1]。
+- `zscore`/其他任意名称：对每个训练病例分别执行 z-score 归一化（减去均值并除以标准差）。
 
-**Important:** The nnU-Net default is to perform 'CT' normalization for CT images and 'zscore' for everything else! If 
-you deviate from that path, make sure to benchmark whether that actually improves results! 
+**重要提示：** nnU-Net 默认对 CT 图像使用 `CT` 归一化，对其他模态使用 `zscore`！如果你想调整默认策略，请务必验证这样做是否真的带来提升！
 
-# How to implement custom normalization strategies?
-- Head over to nnunetv2/preprocessing/normalization
-- implement a new image normalization class by deriving from ImageNormalization
-- register it in nnunetv2/preprocessing/normalization/map_channel_name_to_normalization.py:channel_name_to_normalization_mapping. 
-This is where you specify a channel name that should be associated with it
-- use it by specifying the correct channel_name
+# 如何实现自定义归一化策略？
+- 打开 `nnunetv2/preprocessing/normalization` 目录。
+- 通过继承 `ImageNormalization` 来实现一个新的图像归一化类。
+- 在 `nnunetv2/preprocessing/normalization/map_channel_name_to_normalization.py` 的 `channel_name_to_normalization_mapping` 中注册它，也就是在这里指定该归一化策略对应的通道名称。
+- 在 dataset.json 中填写对应的通道名称以启用它。
 
-Normalization can only be applied to one channel at a time. There is currently no way of implementing a normalization scheme 
-that gets multiple channels as input to be used jointly!
+归一化目前只能一次作用于单个通道，暂不支持同时处理多个通道的归一化方案！

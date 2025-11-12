@@ -1,33 +1,24 @@
-# nnU-Netv2 benchmarks
+# nnU-Netv2 基准测试
 
-Does your system run like it should? Is your epoch time longer than expected? What epoch times should you expect?
+你的系统运行是否正常？单个 epoch 的耗时是否比预期更长？你应该期望怎样的 epoch 时间？
 
-Look no further for we have the solution here!
+别再寻找了，我们已经为你准备好了答案！
 
-## What does the nnU-netv2 benchmark do?
+## nnU-Netv2 基准测试做什么？
 
-nnU-Net's benchmark trains models for 5 epochs. At the end, the fastest epoch will 
-be noted down, along with the GPU name, torch version and cudnn version. You can find the benchmark output in the 
-corresponding nnUNet_results subfolder (see example below). Don't worry, we also provide scripts to collect your 
-results. Or you just start a benchmark and look at the console output. Everything is possible. Nothing is forbidden.
+nnU-Net 的基准测试会训练 5 个 epoch。结束后会记录最快的 epoch 时间，以及所使用的 GPU 名称、torch 版本和 cudnn 版本。你可以在对应的 `nnUNet_results` 子目录中找到基准测试的输出（参见下方示例）。别担心，我们还提供了用于收集结果的脚本。或者你也可以直接启动基准测试并查看控制台输出。一切皆有可能，毫无禁忌。
 
-The benchmark implementation revolves around two trainers:
-- `nnUNetTrainerBenchmark_5epochs` runs a regular training for 5 epochs. When completed, writes a .json file with the fastest 
-epoch time as well as the GPU used and the torch and cudnn versions. Useful for speed testing the entire pipeline 
-(data loading, augmentation, GPU training)
-- `nnUNetTrainerBenchmark_5epochs_noDataLoading` is the same, but it doesn't do any data loading or augmentation. It 
-just presents dummy arrays to the GPU. Useful for checking pure GPU speed.
+基准测试的实现围绕两个训练器展开：
+- `nnUNetTrainerBenchmark_5epochs` 会执行常规训练 5 个 epoch。完成后会写出一个 `.json` 文件，记录最快的 epoch 时间以及使用的 GPU、torch 和 cudnn 版本。适合测试完整流水线的速度（数据加载、增广、GPU 训练）。
+- `nnUNetTrainerBenchmark_5epochs_noDataLoading` 与其相同，但不会进行任何数据加载或增广，只会向 GPU 提供伪造数组。适合检查纯粹的 GPU 性能。
 
-## How to run the nnU-Netv2 benchmark?
-It's quite simple, actually. It looks just like a regular nnU-Net training.
+## 如何运行 nnU-Netv2 基准测试？
+其实很简单，它看起来与常规的 nnU-Net 训练没有区别。
 
-We provide reference numbers for some of the Medical Segmentation Decathlon datasets because they are easily 
-accessible: [download here](https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2). If it needs to be 
-quick and dirty, focus on Tasks 2 and 4. Download and extract the data and convert them to the nnU-Net format with 
-`nnUNetv2_convert_MSD_dataset`. 
-Run `nnUNetv2_plan_and_preprocess` for them.
+我们为部分 Medical Segmentation Decathlon 数据集提供了参考数据，因为它们易于获取：[点击这里下载](https://drive.google.com/drive/folders/1HqEgzS8BV2c7xYNrZdEAnrHk7osJJ--2)。如果你想快速又省事，重点关注任务 2 和 4。下载并解压数据，然后使用 `nnUNetv2_convert_MSD_dataset` 将其转换为 nnU-Net 格式。
+为它们运行 `nnUNetv2_plan_and_preprocess`。
 
-Then, for each dataset, run the following commands (only one per GPU! Or one after the other):
+随后，对每个数据集运行以下命令（每块 GPU 只运行一个，或依次运行）：
 
 ```bash
 nnUNetv2_train DATSET_ID 2d 0 -tr nnUNetTrainerBenchmark_5epochs
@@ -36,80 +27,38 @@ nnUNetv2_train DATSET_ID 2d 0 -tr nnUNetTrainerBenchmark_5epochs_noDataLoading
 nnUNetv2_train DATSET_ID 3d_fullres 0 -tr nnUNetTrainerBenchmark_5epochs_noDataLoading
 ```
 
-If you want to inspect the outcome manually, check (for example!) your 
-`nnUNet_results/DATASET_NAME/nnUNetTrainerBenchmark_5epochs__nnUNetPlans__3d_fullres/fold_0/` folder for the `benchmark_result.json` file.
+如果你想手动检查结果，可以在 `nnUNet_results/DATASET_NAME/nnUNetTrainerBenchmark_5epochs__nnUNetPlans__3d_fullres/fold_0/` 文件夹中找到 `benchmark_result.json`（以此为例）。
 
-Note that there can be multiple entries in this file if the benchmark was run on different GPU types, torch versions or cudnn versions!
+请注意，如果在不同的 GPU、torch 版本或 cudnn 版本上运行了基准测试，该文件中可能会有多条记录！
 
-If you want to summarize your results like we did in our [results](#results), check the 
-[summary script](../nnunetv2/batch_running/benchmarking/summarize_benchmark_results.py). Here you need to change the 
-torch version, cudnn version and dataset you want to summarize, then execute the script. You can find the exact 
-values you need to put there in one of your `benchmark_result.json` files.
+如果你想像我们在[结果](#results)部分那样汇总结果，可以查看[汇总代码脚本](../nnunetv2/batch_running/benchmarking/summarize_benchmark_results.py)。你需要在里面修改 torch 版本、cudnn 版本以及要汇总的数据集，然后执行该脚本。所需的具体数值可以在你的 `benchmark_result.json` 文件中找到。
 
-## Results
-We have tested a variety of GPUs and summarized the results in a 
-[spreadsheet](https://docs.google.com/spreadsheets/d/12Cvt_gr8XU2qWaE0XJk5jJlxMEESPxyqW0CWbQhTNNY/edit?usp=sharing). 
-Note that you can select the torch and cudnn versions at the bottom! There may be comments in this spreadsheet. Read them!
+## 结果
+我们测试了多种 GPU，并将结果整理在一个[电子表格](https://docs.google.com/spreadsheets/d/12Cvt_gr8XU2qWaE0XJk5jJlxMEESPxyqW0CWbQhTNNY/edit?usp=sharing)中。注意，你可以在底部选择不同的 torch 和 cudnn 版本！表格里可能还有备注，记得阅读！
 
-## Result interpretation
+## 结果解读
 
-Results are shown as epoch time in seconds. Lower is better (duh). Epoch times can fluctuate between runs, so as 
-long as you are within like 5-10% of the numbers we report, everything should be dandy. 
+结果以 epoch 时间（秒）展示，越低越好（废话）。不同运行之间 epoch 时间会有波动，所以只要在我们报告数值的 5-10% 以内，一切就都挺好。
 
-If not, here is how you can try to find the culprit!
+若不是如此，以下是一些定位问题的思路：
 
-The first thing to do is to compare the performance between the `nnUNetTrainerBenchmark_5epochs_noDataLoading` and 
-`nnUNetTrainerBenchmark_5epochs` trainers. If the difference is about the same as we report in our spreadsheet, but 
-both your numbers are worse, the problem is with your GPU:
+首先比较 `nnUNetTrainerBenchmark_5epochs_noDataLoading` 和 `nnUNetTrainerBenchmark_5epochs` 的表现。如果二者的差值与我们电子表格中的差值差不多，但你两项数据都更差，那问题在 GPU：
 
-- Are you certain you compare the correct GPU? (duh)
-- If yes, then you might want to install PyTorch in a different way. Never `pip install torch`! Go to the
-[PyTorch installation](https://pytorch.org/get-started/locally/) page, select the most recent cuda version your 
-system supports and only then copy and execute the correct command! Either pip or conda should work
-- If the problem is still not fixed, we recommend you try 
-[compiling pytorch from source](https://github.com/pytorch/pytorch#from-source). It's more difficult but that's 
-how we roll here at the DKFZ (at least the cool kids here).
-- Another thing to consider is to try exactly the same torch + cudnn version as we did in our spreadsheet. 
-Sometimes newer versions can actually degrade performance and there might be bugs from time to time. Older versions 
-are also often a lot slower!
-- Finally, some very basic things that could impact your GPU performance: 
-  - Is the GPU cooled adequately? Check the temperature with `nvidia-smi`. Hot GPUs throttle performance in order to not self-destruct
-  - Is your OS using the GPU for displaying your desktop at the same time? If so then you can expect a performance 
-  penalty (I dunno like 10% !?). That's expected and OK.
-  - Are other users using the GPU as well?
+- 你确定对比的是正确的 GPU 吗（再次废话）
+- 如果是，那可以尝试换一种方式安装 PyTorch。绝不要 `pip install torch`！前往 [PyTorch 安装页面](https://pytorch.org/get-started/locally/)，选择你系统支持的最新 CUDA 版本，然后复制并执行对应命令！无论 pip 还是 conda 都可以。
+- 如果仍未解决，建议尝试[从源码编译 PyTorch](https://github.com/pytorch/pytorch#from-source)。虽然更困难，但这是我们 DKFZ 的风格（至少酷的小伙伴们都这么干）。
+- 另一个需要考虑的是尝试我们在表格中使用的同一 torch + cudnn 版本。新版本有时会降低性能，偶尔也会有 bug。旧版本往往也会慢不少！
+- 最后，一些可能影响 GPU 性能的基础问题：
+  - GPU 散热是否充足？用 `nvidia-smi` 检查温度。过热的 GPU 会降频以免自燃。
+  - 操作系统是否同时用 GPU 驱动桌面显示？若是，则可能带来性能损失（大概 10%？）。这是正常的。
+  - 是否有其他用户在使用 GPU？
 
 
-If you see a large performance difference between `nnUNetTrainerBenchmark_5epochs_noDataLoading` (fast) and 
-`nnUNetTrainerBenchmark_5epochs` (slow) then the problem might be related to data loading and augmentation. As a 
-reminder, nnU-net does not use pre-augmented images (offline augmentation) but instead generates augmented training 
-samples on the fly during training (no, you cannot switch it to offline). This requires that your system can do partial 
-reads of the image files fast enough (SSD storage required!) and that your CPU is powerful enough to run the augmentations.
+如果 `nnUNetTrainerBenchmark_5epochs_noDataLoading`（快）和 `nnUNetTrainerBenchmark_5epochs`（慢）之间差距很大，那么问题可能出在数据加载和增广。提醒一下，nnU-Net 不使用预先增广的图像（离线增广），而是在训练过程中即时生成增广样本（不，不能切换到离线模式）。这要求系统能够快速对图像文件进行部分读取（需要 SSD！），并且 CPU 有足够的性能来执行增广。
 
-Check the following:
+请检查以下事项：
 
-- [CPU bottleneck] How many CPU threads are running during the training? nnU-Net uses 12 processes for data augmentation by default. 
-If you see those 12 running constantly during training, consider increasing the number of processes used for data 
-augmentation (provided there is headroom on your CPU!). Increase the number until you see less active workers than 
-you configured (or just set the number to 32 and forget about it). You can do so by setting the `nnUNet_n_proc_DA` 
-environment variable (Linux: `export nnUNet_n_proc_DA=24`). Read [here](set_environment_variables.md) on how to do this.
-If your CPU does not support more processes (setting more processes than your CPU has threads makes 
-no sense!) you are out of luck and in desperate need of a system upgrade!
-- [I/O bottleneck] If you don't see 12 (or nnUNet_n_proc_DA if you set it) processes running but your training times 
-are still slow then open up `top` (sorry, Windows users. I don't know how to do this on Windows) and look at the value 
-left of 'wa' in the row that begins 
-with '%Cpu (s)'. If this is >1.0 (arbitrarily set threshold here, essentially look for unusually high 'wa'. In a 
-healthy training 'wa' will be almost 0) then your storage cannot keep up with data loading. Make sure to set 
-nnUNet_preprocessed to a folder that is located on an SSD. nvme is preferred over SATA. PCIe3 is enough. 3000MB/s 
-sequential read recommended.
-- [funky stuff] Sometimes there is funky stuff going on, especially when batch sizes are large, files are small and 
-patch sizes are small as well. As part of the data loading process, nnU-Net needs to open and close a file for each 
-training sample. Now imagine a dataset like Dataset004_Hippocampus where for the 2d config we have a batch size of 
-366 and we run 250 iterations in <10s on an A100. That's a lotta files per second (366 * 250 / 10 = 9150 files per second). 
-Oof. If the files are on some network drive (even if it's nvme) then (probably) good night. The good news: nnU-Net
-has got you covered: add `export nnUNet_keep_files_open=True` to your .bashrc and the problem goes away. The neat 
-part: it causes new problems if you are not allowed to have enough open files. You may have to increase the number 
-of allowed open files. `ulimit -n` gives your current limit (Linux only). It should not be something like 1024. 
-Increasing that to 65535 works well for me. See here for how to change these limits: 
-[Link](https://kupczynski.info/posts/ubuntu-18-10-ulimits/) 
-(works for Ubuntu 18, google for your OS!).
+- 【CPU 瓶颈】训练期间有多少 CPU 线程在运行？nnU-Net 默认使用 12 个进程进行数据增广。如果你看到这 12 个进程一直满载运行，可以考虑增加用于数据增广的进程数量（前提是 CPU 还有余量！）。增加数量直到你观察到活跃进程数少于设置值（或者直接设到 32 然后忘掉它）。通过设置环境变量 `nnUNet_n_proc_DA` 来实现（Linux：`export nnUNet_n_proc_DA=24`）。关于如何设置可以查看[这里](set_environment_variables.md)。如果 CPU 不支持更多进程（设置超过 CPU 线程数是没有意义的！），那你只能升级系统了！
+- 【I/O 瓶颈】如果你没有看到 12 个（或你设置的 `nnUNet_n_proc_DA` 数量）进程在运行，但训练时间仍然很慢，那就打开 `top`（抱歉，Windows 用户，我不知道在 Windows 上怎么做）并查看开始于 `%Cpu (s)` 行的 `wa` 左侧的数值。如果该值 >1.0（随意设定的阈值，本质上是看是否出现异常偏高的 `wa`。正常训练中 `wa` 应接近 0），那说明存储在数据加载上卡住了。确保将 `nnUNet_preprocessed` 指向位于 SSD 上的文件夹。NVMe 优于 SATA。PCIe3 足够用了。推荐顺序读取 3000MB/s。
+- 【奇怪问题】有时会遇到一些奇怪问题，尤其是在 batch size 很大、文件很小、patch size 也很小的情况下。在数据加载过程中，nnU-Net 需要为每个训练样本打开并关闭一个文件。想象一下 Dataset004_Hippocampus，在 2D 配置下 batch size 为 366，我们在 A100 上 10 秒内跑完 250 次迭代。那是非常多的文件操作（366 * 250 / 10 = 9150 个文件每秒）。夸张吧。如果这些文件放在某个网络硬盘上（即使是 NVMe），那……大概率凉凉。好消息是 nnU-Net 也为此做好了准备：在 `.bashrc` 中添加 `export nnUNet_keep_files_open=True`，问题即可消除。顺带一提：如果系统不允许你打开足够多的文件，这个设置会带来新问题。可能需要提高允许打开文件的数量。`ulimit -n` 可查看当前限制（仅限 Linux）。不要是 1024 这种数值。把它提高到 65535 对我很管用。关于如何更改这些限制，请查看这个[链接](https://kupczynski.info/posts/ubuntu-18-10-ulimits/)（适用于 Ubuntu 18，其他系统请自行搜索）。
 

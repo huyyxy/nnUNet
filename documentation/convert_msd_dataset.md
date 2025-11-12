@@ -1,3 +1,3 @@
-Use `nnUNetv2_convert_MSD_dataset`.
+使用 `nnUNetv2_convert_MSD_dataset`。
 
-Read `nnUNetv2_convert_MSD_dataset -h` for usage instructions.
+阅读 `nnUNetv2_convert_MSD_dataset -h` 以获取使用说明。

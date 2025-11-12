@@ -1,7 +1,5 @@
-# How to run inference with pretrained models
-**Important:** Pretrained weights from nnU-Net v1 are NOT compatible with V2. You will need to retrain with the new 
-version. But honestly, you already have a fully trained model with which you can run inference (in v1), so 
-just continue using that!
+# 如何使用预训练模型进行推理
+**重要：** nnU-Net v1 的预训练权重与 v2 不兼容。你需要在新版本上重新训练。不过说实话，你已经有一个训练完成的模型（在 v1 中），继续使用它就好！
 
-Not yet available for V2 :-(
-If you wish to run inference with pretrained models, check out the old nnU-Net for now. We are working on this full steam!
+V2 仍然尚未提供 :-(
+如果你想使用预训练模型来进行推理，目前请先查看旧版 nnU-Net。我们正在全力推进这部分功能！
