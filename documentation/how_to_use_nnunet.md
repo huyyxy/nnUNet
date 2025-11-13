@@ -65,7 +65,7 @@ nnUNetv2_train DATASET_NAME_OR_ID UNET_CONFIGURATION FOLD [更多选项参见 -h
 ```
 
 `UNET_CONFIGURATION` 是指定 U-Net 配置的字符串（默认包括 2d、3d_fullres、3d_lowres、3d_cascade_fullres）。
-`DATASET_NAME_OR_ID` 用于指定数据集，`FOLD` 则表示训练 5 折中的哪一折。
+`DATASET_NAME_OR_ID` 用于指定数据集，`FOLD` 则表示训练 5 折中的哪一折，只能取 "all" 或 0-4 之间的整数。
 
 nnU-Net 每 50 个 epoch 保存一次检查点。如果需要继续之前的训练，在命令中加上 `--c` 即可。
 
@@ -81,6 +81,40 @@ nnUNetv2_train DATASET_NAME_OR_ID UNET_CONFIGURATION FOLD --val --npz
 若有多块 GPU，可通过 `CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...]` 选择具体 GPU（此时 `-device` 必须为 cuda）。
 
 更多选项请运行 `nnUNetv2_train -h`。
+
+nnUNetv2_train -h
+用法: nnUNetv2_train [-h] [-tr TR] [-p P] [-pretrained_weights PRETRAINED_WEIGHTS] [-num_gpus NUM_GPUS]
+                     [--npz] [--c] [--val] [--val_best] [--disable_checkpointing] [-device DEVICE]
+                     dataset_name_or_id configuration fold
+
+位置参数:
+  dataset_name_or_id    用于训练的数据集名称或ID
+  configuration         要训练的配置方案
+  fold                  5折交叉验证的折数。应为0到4之间的整数
+
+选项:
+  -h, --help            显示此帮助信息并退出
+  -tr TR                [可选] 使用此标志指定自定义训练器。默认: nnUNetTrainer
+  -p P                  [可选] 使用此标志指定自定义计划标识符。默认: nnUNetPlans
+  -pretrained_weights PRETRAINED_WEIGHTS
+                        [可选] 用作预训练模型的nnU-Net检查点文件路径。
+                        仅在实际训练时使用。测试功能，请谨慎使用
+  -num_gpus NUM_GPUS    指定用于训练的GPU数量
+  --npz                 [可选] 将最终验证的softmax预测另存为npz文件（除预测分割结果外）。
+                        用于寻找最佳模型集成
+  --c                   [可选] 从最新检查点继续训练
+  --val                 [可选] 设置此标志仅运行验证。要求训练已完成
+  --val_best            [可选] 若设置，将使用checkpoint_best而非checkpoint_final执行验证。
+                        与--disable_checkpointing不兼容！
+                        注意：这将使用与常规验证相同的'validation'文件夹，
+                        且无法区分两次验证结果！
+  --disable_checkpointing
+                        [可选] 设置此标志以禁用检查点保存。
+                        适用于测试场景，避免硬盘被检查点文件填满
+  -device DEVICE        用于设置训练运行的设备。
+                        可用选项为'cuda'（GPU）、'cpu'（CPU）和'mps'（Apple M1/M2）。
+                        请勿使用此参数设置GPU ID！
+                        应使用 CUDA_VISIBLE_DEVICES=X nnUNetv2_train [...] 格式！
 
 ### 2D U-Net
 对于 FOLD 属于 [0, 1, 2, 3, 4] 的情况，运行：

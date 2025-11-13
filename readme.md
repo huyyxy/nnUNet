@@ -138,3 +138,18 @@ nnUNet_results/                             # 训练结果根目录（自动生�
         ├── fold_1/ ... fold_4/             # 其余折结构同上
         └── maybe fold_all/                 # 若训练 all fold（单模型全量数据），结构类似
 ```
+
+
+pip3 install nnunetv2
+pip3 install h5py
+python3 convert_bcdata_to_nnunetv2.py
+python3 convert_shidc_to_nnunetv2.py
+python3 merge_ki67_datasets.py --source-datasets Dataset100_Ki67 Dataset101_Ki67 --target-id 150 --target-name Ki67Combined
+export nnUNet_raw="/root/nnUNet/nnUNet_raw"
+export nnUNet_preprocessed="/root/nnUNet/nnUNet_preprocessed"
+export nnUNet_results="/root/nnUNet/nnUNet_results"
+nnUNetv2_plan_and_preprocess -d 100 --verify_dataset_integrity
+nnUNetv2_plan_and_preprocess -d 101 --verify_dataset_integrity
+nnUNetv2_plan_and_preprocess -d 150 --verify_dataset_integrity
+
+nnUNetv2_train 150 2d all
